@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Knowledge Card Demo - Submit</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    textarea { width: 100%; min-height: 220px; padding: 12px; font-size: 14px; }
+    button { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+    .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+    .hint { color: #666; font-size: 13px; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #f6f8fa; padding: 12px; border-radius: 8px; }
+    .ok { color: #0a7; }
+    .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>知识卡片生成 Demo</h1>
+  <p class="hint">在下面输入一段文字，点击生成。它会调用你的 n8n Cloud API（/submit），并返回卡片 Markdown。</p>
+
+  <textarea id="input" placeholder="粘贴一段内容..."></textarea>
+
+  <div class="row">
+    <button id="btn">生成卡片</button>
+    <span id="status" class="hint"></span>
+  </div>
+
+  <h2>生成结果（Markdown）</h2>
+  <pre id="out"></pre>
+
+<script>
+  // ✅ 改这里：换成你的 n8n Cloud 域名（不要带最后的 /）
+  const API_BASE = "https://xxxx.n8n.cloud";
+
+  const btn = document.getElementById('btn');
+  const input = document.getElementById('input');
+  const status = document.getElementById('status');
+  const out = document.getElementById('out');
+
+  btn.onclick = async () => {
+    const text = input.value.trim();
+    if (!text) {
+      status.textContent = "请先输入内容";
+      status.className = "hint err";
+      return;
+    }
+    status.textContent = "生成中…";
+    status.className = "hint";
+    out.textContent = "";
+
+    try {
+      const res = await fetch(`${API_BASE}/webhook/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: text })
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.message || `HTTP ${res.status}`);
+      }
+
+      status.textContent = "成功 ✅";
+      status.className = "hint ok";
+      out.textContent = json.markdown || "(no markdown returned)";
+    } catch (e) {
+      status.textContent = "失败 ❌";
+      status.className = "hint err";
+      out.textContent = String(e);
+    }
+  };
+</script>
+</body>
+</html>
